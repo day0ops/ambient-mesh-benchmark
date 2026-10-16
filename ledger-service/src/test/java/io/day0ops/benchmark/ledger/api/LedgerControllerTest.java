@@ -82,6 +82,17 @@ class LedgerControllerTest {
     }
 
     @Test
+    void createEntryReturns400OnInvalidCurrency() throws Exception {
+        mockMvc.perform(post("/api/v1/ledger/entries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fromAccount":"acc-001","toAccount":"acc-002","amount":30.00,"currency":"US"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_request"));
+    }
+
+    @Test
     void createEntryReturns400OnSameFromAndToAccount() throws Exception {
         given(balanceStore.transfer(anyString(), anyString(), any(BigDecimal.class)))
                 .willThrow(new IllegalArgumentException("fromAccount and toAccount must differ: acc-001"));

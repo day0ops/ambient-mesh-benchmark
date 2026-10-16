@@ -56,6 +56,17 @@ class AccountControllerTest {
     }
 
     @Test
+    void createTransferReturns400OnInvalidCurrency() throws Exception {
+        mockMvc.perform(post("/api/v1/transfers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fromAccount":"acc-001","toAccount":"acc-002","amount":30.00,"currency":"usd"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_request"));
+    }
+
+    @Test
     void createTransferReturns503WhenLedgerUnavailable() throws Exception {
         given(transferService.execute(any(TransferRequest.class)))
                 .willThrow(new LedgerUnavailableException(new RuntimeException("connection refused")));
