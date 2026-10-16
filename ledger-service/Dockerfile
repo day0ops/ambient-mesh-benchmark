@@ -13,7 +13,7 @@ ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/release
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /build/ledger-service/target/ledger-service.jar app.jar
+COPY --from=build /build/ledger-service/target/ledger-service-exec.jar app.jar
 COPY --from=otel /otel/opentelemetry-javaagent.jar otel-javaagent.jar
 ENV JAVA_TOOL_OPTIONS="-javaagent:/app/otel-javaagent.jar" \
     OTEL_SERVICE_NAME="ledger-service" \
