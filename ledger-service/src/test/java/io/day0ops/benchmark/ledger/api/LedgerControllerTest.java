@@ -103,6 +103,6 @@ class LedgerControllerTest {
                                 {"fromAccount":"acc-001","toAccount":"acc-001","amount":30.00,"currency":"USD"}
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("same_account"));
+                .andExpect(jsonPath("$.error").value("invalid_argument"));
     }
 }
