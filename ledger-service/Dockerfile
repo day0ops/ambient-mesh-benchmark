@@ -6,7 +6,7 @@ COPY ledger-service/pom.xml ledger-service/pom.xml
 COPY account-service/pom.xml account-service/pom.xml
 RUN mvn -B -ntp -pl ledger-service -am dependency:go-offline
 COPY ledger-service ledger-service
-RUN mvn -B -ntp -pl ledger-service -am package -DskipTests
+RUN mvn -B -ntp -pl ledger-service -am package -Dmaven.test.skip=true
 
 FROM eclipse-temurin:21-jre AS otel
 ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.9.0/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
