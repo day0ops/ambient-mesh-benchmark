@@ -51,4 +51,18 @@ class AccountBalanceStoreTest {
             .isInstanceOf(UnknownAccountException.class)
             .hasMessageContaining("acc-999");
     }
+
+    @Test
+    void transferThrowsWhenAmountIsZero() {
+        assertThatThrownBy(() -> store.transfer("acc-001", "acc-002", BigDecimal.ZERO))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("amount must be positive");
+    }
+
+    @Test
+    void transferThrowsWhenAmountIsNegative() {
+        assertThatThrownBy(() -> store.transfer("acc-001", "acc-002", new BigDecimal("-10.00")))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("amount must be positive");
+    }
 }

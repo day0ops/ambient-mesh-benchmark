@@ -24,6 +24,10 @@ public class AccountBalanceStore {
     }
 
     public TransferResult transfer(String fromAccount, String toAccount, BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("amount must be positive: " + amount);
+        }
+
         AtomicReference<BigDecimal> fromRef = balances.get(fromAccount);
         if (fromRef == null) {
             throw new UnknownAccountException(fromAccount);
