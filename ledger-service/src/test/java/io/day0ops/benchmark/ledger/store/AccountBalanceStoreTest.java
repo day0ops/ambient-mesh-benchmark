@@ -65,4 +65,13 @@ class AccountBalanceStoreTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("amount must be positive");
     }
+
+    @Test
+    void transferThrowsWhenFromAndToAccountAreTheSame() {
+        assertThatThrownBy(() -> store.transfer("acc-001", "acc-001", new BigDecimal("10.00")))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("acc-001");
+
+        assertThat(store.getBalance("acc-001")).isEqualByComparingTo("100.00");
+    }
 }

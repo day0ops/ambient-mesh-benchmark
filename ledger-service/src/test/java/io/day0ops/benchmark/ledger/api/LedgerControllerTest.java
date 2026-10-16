@@ -80,4 +80,18 @@ class LedgerControllerTest {
                                 """))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void createEntryReturns400OnSameFromAndToAccount() throws Exception {
+        given(balanceStore.transfer(anyString(), anyString(), any(BigDecimal.class)))
+                .willThrow(new IllegalArgumentException("fromAccount and toAccount must differ: acc-001"));
+
+        mockMvc.perform(post("/api/v1/ledger/entries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fromAccount":"acc-001","toAccount":"acc-001","amount":30.00,"currency":"USD"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("same_account"));
+    }
 }

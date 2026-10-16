@@ -27,6 +27,9 @@ public class AccountBalanceStore {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("amount must be positive: " + amount);
         }
+        if (fromAccount.equals(toAccount)) {
+            throw new IllegalArgumentException("fromAccount and toAccount must differ: " + fromAccount);
+        }
 
         AtomicReference<BigDecimal> fromRef = balances.get(fromAccount);
         if (fromRef == null) {
