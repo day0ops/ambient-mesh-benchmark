@@ -3,14 +3,18 @@ package io.day0ops.benchmark.ledger.store;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Exercises the CAS retry loop in {@link AccountBalanceStore#transfer} under real contention
@@ -33,33 +37,39 @@ class AccountBalanceStoreConcurrencyTest {
         BigDecimal expectedTotal = STARTING_BALANCE.multiply(BigDecimal.valueOf(ACCOUNTS.size()));
 
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
-        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
         try {
+            List<Future<?>> futures = new ArrayList<>(THREAD_COUNT);
             for (int t = 0; t < THREAD_COUNT; t++) {
-                executor.submit(() -> {
-                    try {
-                        ThreadLocalRandom random = ThreadLocalRandom.current();
-                        for (int i = 0; i < ITERATIONS_PER_THREAD; i++) {
-                            int fromIndex = random.nextInt(ACCOUNTS.size());
-                            int toIndex;
-                            do {
-                                toIndex = random.nextInt(ACCOUNTS.size());
-                            } while (toIndex == fromIndex);
+                futures.add(executor.submit(() -> {
+                    ThreadLocalRandom random = ThreadLocalRandom.current();
+                    for (int i = 0; i < ITERATIONS_PER_THREAD; i++) {
+                        int fromIndex = random.nextInt(ACCOUNTS.size());
+                        int toIndex;
+                        do {
+                            toIndex = random.nextInt(ACCOUNTS.size());
+                        } while (toIndex == fromIndex);
 
-                            try {
-                                store.transfer(ACCOUNTS.get(fromIndex), ACCOUNTS.get(toIndex), TRANSFER_AMOUNT);
-                            } catch (InsufficientBalanceException expectedUnderContention) {
-                                // Expected when an account is drained by concurrent transfers; not a failure.
-                            }
+                        try {
+                            store.transfer(ACCOUNTS.get(fromIndex), ACCOUNTS.get(toIndex), TRANSFER_AMOUNT);
+                        } catch (InsufficientBalanceException expectedUnderContention) {
+                            // Expected when an account is drained by concurrent transfers; not a failure.
                         }
-                    } finally {
-                        latch.countDown();
                     }
-                });
+                }));
             }
 
-            boolean completed = latch.await(30, TimeUnit.SECONDS);
-            assertThat(completed).as("all transfer threads finished within timeout").isTrue();
+            // Future.get() blocks until the task finishes and rethrows any exception the task
+            // threw (wrapped in ExecutionException), so a worker failure fails this test loudly
+            // instead of being silently dropped by the executor.
+            for (Future<?> future : futures) {
+                try {
+                    future.get(30, TimeUnit.SECONDS);
+                } catch (ExecutionException e) {
+                    fail("transfer worker threw an unexpected exception", e.getCause());
+                } catch (TimeoutException e) {
+                    fail("transfer worker did not finish within timeout", e);
+                }
+            }
         } finally {
             executor.shutdown();
         }
