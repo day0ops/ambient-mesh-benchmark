@@ -16,6 +16,7 @@ import java.time.Instant;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,7 +50,9 @@ class AccountControllerTest {
                         .content("""
                                 {"fromAccount":"","toAccount":"acc-002","amount":-5,"currency":"USD"}
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_request"))
+                .andExpect(jsonPath("$.details").isArray());
     }
 
     @Test
@@ -76,6 +79,7 @@ class AccountControllerTest {
                         .content("""
                                 {"fromAccount":"acc-001","toAccount":"acc-002","amount":30.00,"currency":"USD"}
                                 """))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().json("{\"error\":\"insufficient_balance\"}"));
     }
 }
