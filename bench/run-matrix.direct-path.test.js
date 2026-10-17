@@ -20,6 +20,7 @@ mock.module('./lib/exec.js', () => ({
 mock.module('./lib/cluster.js', () => ({
   cordonNode: async () => {},
   uncordonNode: async () => {},
+  ensureLoadGenNode: async () => {},
   waitForDeploymentReady: async () => {},
   resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
 }));

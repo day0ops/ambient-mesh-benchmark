@@ -127,6 +127,77 @@ test('resolveGatewayServiceName throws a clear error after exhausting retries', 
   );
 });
 
+test('ensureLoadGenNode labels and taints the first node when none is labeled yet', async () => {
+  const calls = [];
+  mock.module('./exec.js', () => ({
+    run: async (cmd, args) => {
+      calls.push({ cmd, args });
+      if (args[0] === 'get' && args[1] === 'nodes' && args.includes('-l')) {
+        if (args[3] === 'benchmark-role=loadgen') {
+          return { stdout: '', stderr: '', exitCode: 0 }; // no node labeled yet
+        }
+      }
+      if (args[0] === 'get' && args[1] === 'nodes' && args.includes('-o') && args.includes('json')) {
+        return {
+          stdout: JSON.stringify({
+            items: [
+              { metadata: { name: 'node-a' }, spec: {} },
+              { metadata: { name: 'node-b' }, spec: {} },
+            ],
+          }),
+          stderr: '',
+          exitCode: 0,
+        };
+      }
+      return { stdout: '', stderr: '', exitCode: 0 };
+    },
+  }));
+  const { ensureLoadGenNode } = await import('./cluster.js');
+  const name = await ensureLoadGenNode();
+  expect(name).toBe('node-a');
+
+  const labelCall = calls.find(c => c.args[0] === 'label');
+  expect(labelCall.args).toEqual(['label', 'node', 'node-a', 'benchmark-role=loadgen', '--overwrite']);
+
+  const taintCall = calls.find(c => c.args[0] === 'taint');
+  expect(taintCall.args).toEqual([
+    'taint',
+    'node',
+    'node-a',
+    'benchmark-role=loadgen:NoSchedule',
+    '--overwrite',
+  ]);
+});
+
+test('ensureLoadGenNode reuses an already-labeled node without re-labeling, and still reapplies the taint', async () => {
+  const calls = [];
+  mock.module('./exec.js', () => ({
+    run: async (cmd, args) => {
+      calls.push({ cmd, args });
+      if (args[0] === 'get' && args[1] === 'nodes' && args.includes('-l')) {
+        return { stdout: 'node-c\n', stderr: '', exitCode: 0 }; // already labeled
+      }
+      return { stdout: '', stderr: '', exitCode: 0 };
+    },
+  }));
+  const { ensureLoadGenNode } = await import('./cluster.js');
+  const name = await ensureLoadGenNode();
+  expect(name).toBe('node-c');
+
+  expect(calls.some(c => c.args[0] === 'label')).toBe(false);
+
+  const taintCall = calls.find(c => c.args[0] === 'taint');
+  expect(taintCall.args).toEqual([
+    'taint',
+    'node',
+    'node-c',
+    'benchmark-role=loadgen:NoSchedule',
+    '--overwrite',
+  ]);
+  // listNodes (get nodes -o json) must never be called once a node is already labeled.
+  expect(calls.some(c => c.args.includes('json'))).toBe(false);
+});
+
 test('waitForDeploymentReady calls kubectl rollout status with a timeout', async () => {
   let captured = null;
   mock.module('./exec.js', () => ({

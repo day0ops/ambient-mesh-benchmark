@@ -1,5 +1,6 @@
 // bench/lib/cluster.js
 import { run } from './exec.js';
+import { LOAD_GEN_NODE_LABEL } from '../config.js';
 
 export async function listNodes() {
   const { stdout } = await run('kubectl', ['get', 'nodes', '-o', 'json']);
@@ -20,6 +21,44 @@ export async function uncordonNode(name) {
 
 export async function labelNode(name, key, value) {
   await run('kubectl', ['label', 'node', name, `${key}=${value}`, '--overwrite']);
+}
+
+async function loadGenNodeNames() {
+  const { stdout } = await run('kubectl', [
+    'get',
+    'nodes',
+    '-l',
+    `${LOAD_GEN_NODE_LABEL.key}=${LOAD_GEN_NODE_LABEL.value}`,
+    '-o',
+    'jsonpath={.items[*].metadata.name}',
+  ]);
+  return stdout.trim().split(/\s+/).filter(Boolean);
+}
+
+// Labels and taints a single node as the dedicated load-generator node, so
+// Fortio (which tolerates the taint) can land there while the SUT (which has
+// no tolerations) never can. Idempotent - safe to call on every runMatrix()
+// invocation; reuses the already-labeled node and reapplies the taint rather
+// than picking a new one or erroring if it's already tainted.
+export async function ensureLoadGenNode() {
+  const existing = await loadGenNodeNames();
+  let name = existing[0];
+  if (!name) {
+    const nodes = await listNodes();
+    if (nodes.length === 0) {
+      throw new Error('ensureLoadGenNode: no nodes found in cluster');
+    }
+    name = nodes[0].name;
+    await labelNode(name, LOAD_GEN_NODE_LABEL.key, LOAD_GEN_NODE_LABEL.value);
+  }
+  await run('kubectl', [
+    'taint',
+    'node',
+    name,
+    `${LOAD_GEN_NODE_LABEL.key}=${LOAD_GEN_NODE_LABEL.value}:NoSchedule`,
+    '--overwrite',
+  ]);
+  return name;
 }
 
 const RESOLVE_GATEWAY_SERVICE_INTERVAL_MS = 2000;

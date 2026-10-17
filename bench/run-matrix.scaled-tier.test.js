@@ -18,6 +18,7 @@ test('runMatrix waits for both deployments to be ready again after scaled-tier r
   mock.module('./lib/cluster.js', () => ({
     cordonNode: async () => {},
     uncordonNode: async () => {},
+    ensureLoadGenNode: async () => {},
     waitForDeploymentReady: async (ns, name) => calls.push({ mod: 'wait', ns, name }),
     resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
   }));

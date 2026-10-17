@@ -16,6 +16,7 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
   mock.module('./lib/cluster.js', () => ({
     cordonNode: async name => calls.push({ mod: 'cordon', name }),
     uncordonNode: async name => calls.push({ mod: 'uncordon', name }),
+    ensureLoadGenNode: async () => calls.push({ mod: 'ensureLoadGenNode' }),
     waitForDeploymentReady: async (ns, name) => calls.push({ mod: 'wait', ns, name }),
     resolveGatewayServiceName: async (ns, gatewayName) => {
       calls.push({ mod: 'resolveGatewaySvc', ns, gatewayName });

@@ -4,6 +4,7 @@ import { run } from './lib/exec.js';
 import {
   cordonNode,
   uncordonNode,
+  ensureLoadGenNode,
   waitForDeploymentReady,
   resolveGatewayServiceName,
 } from './lib/cluster.js';
@@ -81,6 +82,7 @@ export async function runMatrix({
   dashboardPanels,
   paths = ['direct', 'ztunnel', 'waypoint'],
 }) {
+  await ensureLoadGenNode();
   await ensureFortioPod();
   await ensureImageRenderer();
 

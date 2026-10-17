@@ -13,6 +13,11 @@ metadata:
 spec:
   nodeSelector:
     benchmark-role: loadgen
+  tolerations:
+    - key: benchmark-role
+      operator: Equal
+      value: loadgen
+      effect: NoSchedule
   containers:
     - name: fortio
       image: fortio/fortio:1.63.0

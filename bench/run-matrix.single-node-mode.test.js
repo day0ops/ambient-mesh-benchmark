@@ -20,6 +20,7 @@ test("applyNodeMode('single') uncordons the first node before cordoning the rest
   mock.module('./lib/cluster.js', () => ({
     cordonNode: async name => calls.push({ mod: 'cordon', name }),
     uncordonNode: async name => calls.push({ mod: 'uncordon', name }),
+    ensureLoadGenNode: async () => {},
     waitForDeploymentReady: async () => {},
     resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
   }));
