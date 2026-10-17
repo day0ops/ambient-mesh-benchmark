@@ -94,6 +94,39 @@ test('resolveGatewayServiceName looks up the Service by gateway-name label and r
   expect(name).toBe('ambient-benchmark-istio');
 });
 
+test('resolveGatewayServiceName retries until the Service name appears', async () => {
+  let calls = 0;
+  mock.module('./exec.js', () => ({
+    run: async () => {
+      calls += 1;
+      if (calls < 3) return { stdout: '', stderr: '', exitCode: 0 };
+      return { stdout: 'ambient-benchmark-istio\n', stderr: '', exitCode: 0 };
+    },
+  }));
+  const { resolveGatewayServiceName } = await import('./cluster.js');
+  const name = await resolveGatewayServiceName('ambient-mesh-benchmark', 'ambient-benchmark', {
+    intervalMs: 0,
+    timeoutMs: 1000,
+  });
+  expect(name).toBe('ambient-benchmark-istio');
+  expect(calls).toBe(3);
+});
+
+test('resolveGatewayServiceName throws a clear error after exhausting retries', async () => {
+  mock.module('./exec.js', () => ({
+    run: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
+  }));
+  const { resolveGatewayServiceName } = await import('./cluster.js');
+  await expect(
+    resolveGatewayServiceName('ambient-mesh-benchmark', 'ambient-benchmark', {
+      intervalMs: 0,
+      timeoutMs: 20,
+    })
+  ).rejects.toThrow(
+    'Could not resolve gateway Service for gatewayName=ambient-benchmark in namespace=ambient-mesh-benchmark'
+  );
+});
+
 test('waitForDeploymentReady calls kubectl rollout status with a timeout', async () => {
   let captured = null;
   mock.module('./exec.js', () => ({
