@@ -21,6 +21,7 @@ import {
   GATEWAY_HOSTNAME,
   TRANSFER_PATH,
   TRANSFER_PAYLOAD,
+  LOAD_GEN_NODE_LABEL,
 } from './config.js';
 
 const SCALED_RESOURCES = { cpu: '2000m', memory: '2Gi' };
@@ -64,7 +65,7 @@ async function nonLoadGenNodeNames() {
     'get',
     'nodes',
     '-l',
-    '!benchmark-role',
+    `!${LOAD_GEN_NODE_LABEL.key}`,
     '-o',
     'jsonpath={.items[*].metadata.name}',
   ]);
@@ -116,6 +117,7 @@ export async function runMatrix({
   await ensureFortioPod();
   await ensureImageRenderer();
 
+  let mainError;
   try {
     for (const path of paths) {
       const usecaseName = USECASE_BY_PATH[path];
@@ -192,11 +194,25 @@ export async function runMatrix({
         }
       }
     }
+  } catch (err) {
+    mainError = err;
+    throw err;
   } finally {
     try {
-      for (const name of await nonLoadGenNodeNames()) await uncordonNode(name);
+      const names = await nonLoadGenNodeNames();
+      const results = await Promise.allSettled(names.map(name => uncordonNode(name)));
+      const failure = results.find(result => result.status === 'rejected');
+      if (failure) throw failure.reason;
     } catch (cleanupError) {
-      console.error('runMatrix: failed to uncordon nodes during cleanup:', cleanupError.message);
+      // Only swallow a cleanup failure when the main path already failed -
+      // otherwise it would mask the original error. If the main path
+      // succeeded, a failed uncordon must still surface: it leaves cluster
+      // capacity reduced and skews the next run's node-mode semantics.
+      if (mainError) {
+        console.error('runMatrix: failed to uncordon nodes during cleanup:', cleanupError.message);
+      } else {
+        throw cleanupError;
+      }
     }
   }
 }

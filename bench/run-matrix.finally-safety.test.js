@@ -66,3 +66,63 @@ test('runMatrix still propagates the original error when cleanup itself fails', 
 
   expect(getNodesCalls).toBe(2);
 });
+
+test('runMatrix throws the cleanup error when the main path succeeds but the final uncordon fails', async () => {
+  let uncordonCalls = 0;
+
+  mock.module('./lib/exec.js', () => ({
+    run: async (cmd, args) => {
+      if (cmd === 'kubectl' && args[0] === 'get' && args.includes('jsonpath={.items[*].metadata.name}')) {
+        return { stdout: 'node-a node-b', stderr: '', exitCode: 0 };
+      }
+      return { stdout: '', stderr: '', exitCode: 0 };
+    },
+  }));
+  mock.module('./lib/cluster.js', () => ({
+    cordonNode: async () => {},
+    uncordonNode: async () => {
+      uncordonCalls += 1;
+      // The 'direct' path's applyNodeMode('multi') uncordons node-a and
+      // node-b up front (calls 1-2); the finally block's cleanup pass is
+      // what simulates a transient kubectl failure here.
+      if (uncordonCalls > 2) {
+        throw new Error('kubectl: uncordon transient failure');
+      }
+    },
+    ensureLoadGenNode: async () => {},
+    waitForDeploymentReady: async () => {},
+    resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
+  }));
+  mock.module('./lib/meshcli.js', () => ({
+    deployUsecase: async () => {},
+    patchDeploymentResources: async () => {},
+  }));
+  mock.module('./lib/fortio.js', () => ({
+    ensureFortioPod: async () => {},
+    runLoadTest: async () => ({ p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 }),
+  }));
+  mock.module('./lib/grafana.js', () => ({
+    ensureImageRenderer: async () => {},
+    capturePanel: async () => true,
+  }));
+  mock.module('./lib/results.js', () => ({
+    recordRun: async () => '/fake/path.json',
+    resultExists: async () => false,
+  }));
+
+  const { runMatrix } = await import('./run-matrix.js');
+
+  await expect(
+    runMatrix({
+      meshFieldKitDir: '/fake/mesh-field-kit',
+      grafanaUrl: 'http://grafana.example.com',
+      grafanaAuth: { username: 'admin', password: 'secret' },
+      resultsDir: '/fake/results',
+      tier: 'default',
+      concurrencyLevels: [8],
+      dashboardPanels: [],
+      paths: ['direct'],
+      grafanaSettleMs: 0,
+    })
+  ).rejects.toThrow('kubectl: uncordon transient failure');
+});
