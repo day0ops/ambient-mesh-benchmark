@@ -1,0 +1,10 @@
+{
+  "name": "ambient-mesh-benchmark-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "matrix": "bun run run-matrix.js"
+  }
+}
