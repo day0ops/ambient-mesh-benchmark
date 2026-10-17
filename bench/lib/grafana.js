@@ -29,11 +29,30 @@ export async function ensureImageRenderer() {
   ]);
 }
 
-export async function capturePanel({ grafanaUrl, dashboardUid, panelId, from, to, outputPath, auth }) {
+const DEFAULT_CAPTURE_TIMEOUT_MS = 30000;
+
+// A capture failure (including a hung render call) must never abort or
+// stall a load test run - bound the fetch with an AbortController so a
+// timeout is caught and handled exactly like any other failure.
+export async function capturePanel({
+  grafanaUrl,
+  dashboardUid,
+  panelId,
+  from,
+  to,
+  outputPath,
+  auth,
+  timeoutMs = DEFAULT_CAPTURE_TIMEOUT_MS,
+}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const url = `${grafanaUrl}/render/d-solo/${dashboardUid}?panelId=${panelId}&from=${from}&to=${to}&width=1000&height=500`;
     const authHeader = 'Basic ' + Buffer.from(`${auth.username}:${auth.password}`).toString('base64');
-    const response = await fetch(url, { headers: { Authorization: authHeader } });
+    const response = await fetch(url, {
+      headers: { Authorization: authHeader },
+      signal: controller.signal,
+    });
     if (!response.ok) {
       console.warn(`Grafana render failed (${response.status}) for ${url}`);
       return false;
@@ -44,5 +63,7 @@ export async function capturePanel({ grafanaUrl, dashboardUid, panelId, from, to
   } catch (error) {
     console.warn(`Grafana capture error: ${error.message}`);
     return false;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

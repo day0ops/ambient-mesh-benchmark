@@ -77,6 +77,35 @@ test('capturePanel fetches the render URL and writes the PNG, returning true on 
   }
 });
 
+test('capturePanel aborts a hung fetch after the timeout and treats it as a graceful failure, not a hang', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (url, opts = {}) =>
+    new Promise((resolve, reject) => {
+      // Simulate a render call that never responds on its own - it only
+      // settles if/when the request is aborted, exactly like a hung
+      // grafana-image-renderer call would (never a real 30s wait here).
+      opts.signal?.addEventListener('abort', () => {
+        reject(new DOMException('The operation was aborted.', 'AbortError'));
+      });
+    });
+  try {
+    const { capturePanel } = await import('./grafana.js');
+    const result = await capturePanel({
+      grafanaUrl: 'http://grafana.example.com',
+      dashboardUid: 'abc123',
+      panelId: 4,
+      from: 1000,
+      to: 2000,
+      outputPath: '/tmp/panel.png',
+      auth: { username: 'admin', password: 'secret' },
+      timeoutMs: 10,
+    });
+    expect(result).toBe(false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('capturePanel returns false (does not throw) when the fetch fails', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => ({ ok: false, status: 500 });
