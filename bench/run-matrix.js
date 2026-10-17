@@ -18,6 +18,13 @@ const GATEWAY_SERVICE_DNS = `ambient-benchmark.${NAMESPACE}.svc.cluster.local`;
 const SCALED_RESOURCES = { cpu: '2000m', memory: '2Gi' };
 const LOAD_TEST_DURATION_SEC = 30;
 
+// 'n/a' (the direct path's nodeMode) contains a '/', which is unsafe in
+// filenames and recorded labels. Translate it for recording/labeling only -
+// applyNodeMode()'s cordon logic has its own separate 'multi' translation.
+function nodeModeLabel(nodeMode) {
+  return nodeMode === 'n/a' ? 'none' : nodeMode;
+}
+
 async function nonLoadGenNodeNames() {
   const { stdout } = await run('kubectl', [
     'get',
@@ -70,60 +77,64 @@ export async function runMatrix({
   await ensureFortioPod();
   await ensureImageRenderer();
 
-  for (const path of paths) {
-    const usecaseName = USECASE_BY_PATH[path];
-    const nodeModes = NODE_MODES_BY_PATH[path];
+  try {
+    for (const path of paths) {
+      const usecaseName = USECASE_BY_PATH[path];
+      const nodeModes = NODE_MODES_BY_PATH[path];
 
-    for (const nodeMode of nodeModes) {
-      await applyNodeMode(nodeMode === 'n/a' ? 'multi' : nodeMode);
-      await deployUsecase(usecaseName, meshFieldKitDir);
-      await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
-      await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
+      for (const nodeMode of nodeModes) {
+        await applyNodeMode(nodeMode === 'n/a' ? 'multi' : nodeMode);
+        await deployUsecase(usecaseName, meshFieldKitDir);
+        await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
+        await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
 
-      if (tier === 'scaled') {
-        await patchDeploymentResources(NAMESPACE, 'account-service', SCALED_RESOURCES);
-        await patchDeploymentResources(NAMESPACE, 'ledger-service', SCALED_RESOURCES);
-      }
+        if (tier === 'scaled') {
+          await patchDeploymentResources(NAMESPACE, 'account-service', SCALED_RESOURCES);
+          await patchDeploymentResources(NAMESPACE, 'ledger-service', SCALED_RESOURCES);
+          await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
+          await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
+        }
 
-      for (const concurrency of concurrencyLevels) {
-        const startedAt = Date.now();
-        const fortioResult = await runLoadTest({
-          connections: concurrency,
-          durationSec: LOAD_TEST_DURATION_SEC,
-          targetHost: GATEWAY_SERVICE_DNS,
-          hostHeader: GATEWAY_HOSTNAME,
-          path: TRANSFER_PATH,
-          method: 'POST',
-          payload: TRANSFER_PAYLOAD,
-        });
-        const endedAt = Date.now();
-        const runLabel = `${path}-${nodeMode}-${tier}-${concurrency}`;
-        const screenshotPaths = await captureDashboardPanels(
-          grafanaUrl,
-          grafanaAuth,
-          dashboardPanels,
-          startedAt,
-          endedAt,
-          resultsDir,
-          runLabel
-        );
-        await recordRun(
-          {
-            path,
-            nodeMode,
-            tier,
-            concurrency,
-            fortioResult,
-            screenshotPaths,
-            timestamp: new Date(startedAt).toISOString(),
-          },
-          resultsDir
-        );
+        for (const concurrency of concurrencyLevels) {
+          const startedAt = Date.now();
+          const fortioResult = await runLoadTest({
+            connections: concurrency,
+            durationSec: LOAD_TEST_DURATION_SEC,
+            targetHost: GATEWAY_SERVICE_DNS,
+            hostHeader: GATEWAY_HOSTNAME,
+            path: TRANSFER_PATH,
+            method: 'POST',
+            payload: TRANSFER_PAYLOAD,
+          });
+          const endedAt = Date.now();
+          const runLabel = `${path}-${nodeModeLabel(nodeMode)}-${tier}-${concurrency}`;
+          const screenshotPaths = await captureDashboardPanels(
+            grafanaUrl,
+            grafanaAuth,
+            dashboardPanels,
+            startedAt,
+            endedAt,
+            resultsDir,
+            runLabel
+          );
+          await recordRun(
+            {
+              path,
+              nodeMode: nodeModeLabel(nodeMode),
+              tier,
+              concurrency,
+              fortioResult,
+              screenshotPaths,
+              timestamp: new Date(startedAt).toISOString(),
+            },
+            resultsDir
+          );
+        }
       }
     }
+  } finally {
+    for (const name of await nonLoadGenNodeNames()) await uncordonNode(name);
   }
-
-  for (const name of await nonLoadGenNodeNames()) await uncordonNode(name);
 }
 
 if (import.meta.main) {
