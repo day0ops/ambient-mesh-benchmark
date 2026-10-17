@@ -1,4 +1,5 @@
 // bench/run-matrix.js
+import { join } from 'path';
 import { run } from './lib/exec.js';
 import { cordonNode, uncordonNode, waitForDeploymentReady } from './lib/cluster.js';
 import { deployUsecase, patchDeploymentResources } from './lib/meshcli.js';
@@ -49,7 +50,7 @@ async function applyNodeMode(nodeMode) {
 async function captureDashboardPanels(grafanaUrl, grafanaAuth, dashboardPanels, from, to, resultsDir, runLabel) {
   const paths = [];
   for (const panel of dashboardPanels) {
-    const outputPath = `${resultsDir}/${runLabel}-${panel.label}.png`;
+    const outputPath = join(resultsDir, `${runLabel}-${panel.label}.png`);
     const ok = await capturePanel({
       grafanaUrl,
       dashboardUid: panel.dashboardUid,
