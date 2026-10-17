@@ -15,6 +15,7 @@ import { recordRun, resultExists } from './lib/results.js';
 import {
   USECASE_BY_PATH,
   NODE_MODES_BY_PATH,
+  DEFAULT_TIER_CONCURRENCY,
   NAMESPACE,
   GATEWAY_NAME,
   GATEWAY_HOSTNAME,
@@ -178,7 +179,7 @@ if (import.meta.main) {
     },
     resultsDir: process.env.BENCH_RESULTS_DIR || './results',
     tier: process.env.BENCH_TIER || 'default',
-    concurrencyLevels: (process.env.BENCH_CONCURRENCY || '8,16,32,64,128,256,512')
+    concurrencyLevels: (process.env.BENCH_CONCURRENCY || DEFAULT_TIER_CONCURRENCY.join(','))
       .split(',')
       .map(Number),
     dashboardPanels,
