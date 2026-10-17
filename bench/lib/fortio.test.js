@@ -35,7 +35,7 @@ test('ensureFortioPod applies the manifest and waits for the pod to be ready', a
       '--for=condition=Ready',
       'pod/fortio-loadgen',
       '-n',
-      'ambient-mesh-benchmark',
+      'benchmark-loadgen',
       '--timeout=120s',
     ],
   });
@@ -64,7 +64,7 @@ test('runLoadTest execs fortio load with the right flags and parses the JSON res
     'exec',
     'fortio-loadgen',
     '-n',
-    'ambient-mesh-benchmark',
+    'benchmark-loadgen',
     '--',
     'fortio',
     'load',

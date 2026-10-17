@@ -1,8 +1,13 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: benchmark-loadgen
+---
+apiVersion: v1
 kind: Pod
 metadata:
   name: fortio-loadgen
-  namespace: ambient-mesh-benchmark
+  namespace: benchmark-loadgen
   labels:
     app: fortio-loadgen
 spec:

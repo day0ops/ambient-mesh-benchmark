@@ -1,7 +1,10 @@
 // bench/lib/fortio.js
 import { run } from './exec.js';
 
-const NAMESPACE = 'ambient-mesh-benchmark';
+// Deliberately decoupled from the system-under-test's namespace, and never
+// labeled for any mesh dataplane mode, so Fortio's own egress is identical
+// and unmeshed across all test paths, and survives usecase namespace churn.
+const NAMESPACE = 'benchmark-loadgen';
 const POD_NAME = 'fortio-loadgen';
 const MANIFEST_PATH = new URL('../manifests/fortio-pod.yaml', import.meta.url).pathname;
 
