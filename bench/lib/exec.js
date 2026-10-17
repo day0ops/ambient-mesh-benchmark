@@ -1,5 +1,6 @@
 export async function run(cmd, args = [], opts = {}) {
   const proc = Bun.spawn([cmd, ...args], {
+    cwd: opts.cwd,
     stdout: 'pipe',
     stderr: 'pipe',
   });
