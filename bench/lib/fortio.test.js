@@ -92,3 +92,57 @@ test('runLoadTest execs fortio load with the right flags and parses the JSON res
   expect(result.throughputQps).toBeCloseTo(583.61, 2);
   expect(result.errorCount).toBe(3);
 });
+
+test('runLoadTest records null for a percentile missing from the histogram instead of NaN', async () => {
+  mock.module('./exec.js', () => ({
+    run: async () => ({
+      stdout: JSON.stringify({
+        ActualQPS: 100,
+        DurationHistogram: {
+          Percentiles: [
+            { Percentile: 50, Value: 0.1 },
+            // 95th and 99th percentiles absent - too few samples.
+          ],
+        },
+        RetCodes: { '200': 10 },
+      }),
+      stderr: '',
+      exitCode: 0,
+    }),
+  }));
+  const { runLoadTest } = await import('./fortio.js');
+  const result = await runLoadTest({
+    connections: 1,
+    durationSec: 1,
+    targetHost: 'host',
+    hostHeader: 'host',
+    path: '/',
+    method: 'GET',
+    payload: '',
+  });
+  expect(result.p50Ms).toBeCloseTo(100, 0);
+  expect(result.p95Ms).toBeNull();
+  expect(result.p99Ms).toBeNull();
+});
+
+test('runLoadTest throws a clear error when DurationHistogram is absent from a malformed fortio result', async () => {
+  mock.module('./exec.js', () => ({
+    run: async () => ({
+      stdout: JSON.stringify({ ActualQPS: 100, RetCodes: { '200': 10 } }),
+      stderr: '',
+      exitCode: 0,
+    }),
+  }));
+  const { runLoadTest } = await import('./fortio.js');
+  await expect(
+    runLoadTest({
+      connections: 1,
+      durationSec: 1,
+      targetHost: 'host',
+      hostHeader: 'host',
+      path: '/',
+      method: 'GET',
+      payload: '',
+    })
+  ).rejects.toThrow('normalizeFortioResult: fortio result is missing DurationHistogram.Percentiles');
+});

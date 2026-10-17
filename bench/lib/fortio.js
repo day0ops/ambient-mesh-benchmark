@@ -21,14 +21,22 @@ export async function ensureFortioPod() {
 }
 
 function normalizeFortioResult(raw) {
-  const percentile = p => raw.DurationHistogram.Percentiles.find(x => x.Percentile === p)?.Value;
+  if (!Array.isArray(raw.DurationHistogram?.Percentiles)) {
+    throw new Error('normalizeFortioResult: fortio result is missing DurationHistogram.Percentiles');
+  }
+  // A percentile can be absent from the histogram with very few samples -
+  // record null rather than NaN (undefined * 1000) for a missing one.
+  const percentileMs = p => {
+    const value = raw.DurationHistogram.Percentiles.find(x => x.Percentile === p)?.Value;
+    return value === undefined ? null : value * 1000;
+  };
   const errorCount = Object.entries(raw.RetCodes || {})
     .filter(([code]) => !code.startsWith('2'))
     .reduce((sum, [, count]) => sum + count, 0);
   return {
-    p50Ms: percentile(50) * 1000,
-    p95Ms: percentile(95) * 1000,
-    p99Ms: percentile(99) * 1000,
+    p50Ms: percentileMs(50),
+    p95Ms: percentileMs(95),
+    p99Ms: percentileMs(99),
     throughputQps: raw.ActualQPS,
     errorCount,
     raw,
