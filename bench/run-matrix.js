@@ -46,6 +46,7 @@ async function nonLoadGenNodeNames() {
 async function applyNodeMode(nodeMode) {
   const names = await nonLoadGenNodeNames();
   if (nodeMode === 'single') {
+    await uncordonNode(names[0]);
     for (const name of names.slice(1)) await cordonNode(name);
   } else {
     for (const name of names) await uncordonNode(name);

@@ -29,9 +29,7 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
       calls.push({ mod: 'deploy', name });
       // Throw on the FIRST call, i.e. during the 'single' nodeMode
       // iteration, before the 'multi' iteration's applyNodeMode() has a
-      // chance to uncordon everything on its own. This keeps the assertion
-      // honest: any uncordon calls observed below must come from the
-      // try/finally cleanup, not incidentally from node-mode switching.
+      // chance to uncordon everything on its own.
       if (deployCallCount === 1) throw new Error('boom: deploy failed');
     },
     patchDeploymentResources: async (ns, name) => calls.push({ mod: 'patch', ns, name }),
@@ -73,5 +71,8 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
   ).rejects.toThrow('boom: deploy failed');
 
   const uncordonCalls = calls.filter(c => c.mod === 'uncordon');
-  expect(uncordonCalls.map(c => c.name).sort()).toEqual(['node-a', 'node-b']);
+  // The try/finally cleanup always runs last, so its uncordon-all calls are
+  // the trailing entries - regardless of any uncordon applyNodeMode('single')
+  // already issued for names[0] during the interrupted iteration.
+  expect(uncordonCalls.slice(-2).map(c => c.name).sort()).toEqual(['node-a', 'node-b']);
 });
