@@ -69,6 +69,7 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
       concurrencyLevels: [8],
       dashboardPanels: [],
       paths: ['ztunnel'], // two node modes: single, multi -> first deployUsecase call throws
+      grafanaSettleMs: 0,
     })
   ).rejects.toThrow('boom: deploy failed');
 

@@ -78,6 +78,7 @@ test('runMatrix skips a combination whose result file already exists, without ca
     concurrencyLevels: [8],
     dashboardPanels: [],
     paths: ['direct'],
+    grafanaSettleMs: 0,
   });
 
   expect(deployCalls).toEqual([]);
@@ -112,6 +113,7 @@ test('runMatrix runs a combination normally when no prior result file exists', a
     concurrencyLevels: [8],
     dashboardPanels: [],
     paths: ['direct'],
+    grafanaSettleMs: 0,
   });
 
   expect(deployCalls).toEqual(['ambient-benchmark-direct']);

@@ -52,6 +52,7 @@ test("applyNodeMode('single') uncordons the first node before cordoning the rest
     concurrencyLevels: [8],
     dashboardPanels: [],
     paths: ['waypoint'], // first nodeMode is 'single'
+    grafanaSettleMs: 0,
   });
 
   const cordonOrUncordonCalls = calls.filter(c => c.mod === 'cordon' || c.mod === 'uncordon');

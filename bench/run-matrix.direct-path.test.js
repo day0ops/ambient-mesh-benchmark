@@ -52,6 +52,7 @@ test('runMatrix on the direct path records results without crashing on nodeMode 
     concurrencyLevels: [8],
     dashboardPanels: [],
     paths: ['direct'],
+    grafanaSettleMs: 0,
   });
 
   const files = await readdir(resultsDir);

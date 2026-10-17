@@ -50,6 +50,7 @@ test('runMatrix waits for both deployments to be ready again after scaled-tier r
     concurrencyLevels: [8],
     dashboardPanels: [],
     paths: ['direct'],
+    grafanaSettleMs: 0,
   });
 
   const waitCalls = calls.filter(c => c.mod === 'wait');

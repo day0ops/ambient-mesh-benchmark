@@ -25,6 +25,32 @@ import {
 
 const SCALED_RESOURCES = { cpu: '2000m', memory: '2Gi' };
 const LOAD_TEST_DURATION_SEC = 30;
+// Gives Prometheus a chance to scrape the final data points before the
+// Grafana panel capture window closes - scrape intervals of 15-30s can
+// otherwise leave a run's screenshot with only 1-2 samples.
+const DEFAULT_GRAFANA_SETTLE_MS = 5000;
+
+const REQUIRED_CONFIG = [
+  { key: 'meshFieldKitDir', envVar: 'MESH_FIELD_KIT_DIR' },
+  { key: 'grafanaUrl', envVar: 'GRAFANA_URL' },
+];
+const REQUIRED_GRAFANA_AUTH = [
+  { key: 'username', envVar: 'GRAFANA_ADMIN_USERNAME' },
+  { key: 'password', envVar: 'GRAFANA_ADMIN_PASSWORD' },
+];
+
+// Fails fast with a clear error naming the missing env var(s) instead of
+// failing later and confusingly (wrong cwd, fetch to 'undefined/...').
+function assertRequiredConfig({ meshFieldKitDir, grafanaUrl, grafanaAuth }) {
+  const resolved = { meshFieldKitDir, grafanaUrl };
+  const missing = REQUIRED_CONFIG.filter(({ key }) => !resolved[key]).map(({ envVar }) => envVar);
+  for (const { key, envVar } of REQUIRED_GRAFANA_AUTH) {
+    if (!grafanaAuth?.[key]) missing.push(envVar);
+  }
+  if (missing.length > 0) {
+    throw new Error(`runMatrix: missing required configuration (${missing.join(', ')})`);
+  }
+}
 
 // 'n/a' (the direct path's nodeMode) contains a '/', which is unsafe in
 // filenames and recorded labels. Translate it for recording/labeling only -
@@ -82,7 +108,10 @@ export async function runMatrix({
   concurrencyLevels,
   dashboardPanels,
   paths = ['direct', 'ztunnel', 'waypoint'],
+  grafanaSettleMs = DEFAULT_GRAFANA_SETTLE_MS,
 }) {
+  assertRequiredConfig({ meshFieldKitDir, grafanaUrl, grafanaAuth });
+
   await ensureLoadGenNode();
   await ensureFortioPod();
   await ensureImageRenderer();
@@ -137,13 +166,14 @@ export async function runMatrix({
             payload: TRANSFER_PAYLOAD,
           });
           const endedAt = Date.now();
+          if (grafanaSettleMs > 0) await Bun.sleep(grafanaSettleMs);
           const runLabel = `${path}-${label}-${tier}-${concurrency}`;
           const screenshotPaths = await captureDashboardPanels(
             grafanaUrl,
             grafanaAuth,
             dashboardPanels,
             startedAt,
-            endedAt,
+            endedAt + grafanaSettleMs,
             resultsDir,
             runLabel
           );
@@ -163,7 +193,11 @@ export async function runMatrix({
       }
     }
   } finally {
-    for (const name of await nonLoadGenNodeNames()) await uncordonNode(name);
+    try {
+      for (const name of await nonLoadGenNodeNames()) await uncordonNode(name);
+    } catch (cleanupError) {
+      console.error('runMatrix: failed to uncordon nodes during cleanup:', cleanupError.message);
+    }
   }
 }
 

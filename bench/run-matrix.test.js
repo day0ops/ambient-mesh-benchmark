@@ -59,6 +59,7 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
     concurrencyLevels: [8, 16],
     dashboardPanels: [{ dashboardUid: 'abc', panelId: 1, label: 'control-plane' }],
     paths: ['ztunnel'],
+    grafanaSettleMs: 0,
   });
 
   const deployCalls = calls.filter(c => c.mod === 'deploy');
