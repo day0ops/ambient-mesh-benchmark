@@ -22,6 +22,22 @@ export async function labelNode(name, key, value) {
   await run('kubectl', ['label', 'node', name, `${key}=${value}`, '--overwrite']);
 }
 
+// Gateway API controllers are not guaranteed to name the auto-provisioned
+// Service after the Gateway resource - look it up by the label they do set.
+export async function resolveGatewayServiceName(namespace, gatewayName) {
+  const { stdout } = await run('kubectl', [
+    'get',
+    'svc',
+    '-n',
+    namespace,
+    '-l',
+    `gateway.networking.k8s.io/gateway-name=${gatewayName}`,
+    '-o',
+    'jsonpath={.items[0].metadata.name}',
+  ]);
+  return stdout.trim();
+}
+
 export async function waitForDeploymentReady(namespace, name, timeoutSec) {
   await run('kubectl', [
     'rollout',

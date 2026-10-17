@@ -68,6 +68,32 @@ test('labelNode calls kubectl label with --overwrite', async () => {
   });
 });
 
+test('resolveGatewayServiceName looks up the Service by gateway-name label and returns its name', async () => {
+  let captured = null;
+  mock.module('./exec.js', () => ({
+    run: async (cmd, args) => {
+      captured = { cmd, args };
+      return { stdout: 'ambient-benchmark-istio\n', stderr: '', exitCode: 0 };
+    },
+  }));
+  const { resolveGatewayServiceName } = await import('./cluster.js');
+  const name = await resolveGatewayServiceName('ambient-mesh-benchmark', 'ambient-benchmark');
+  expect(captured).toEqual({
+    cmd: 'kubectl',
+    args: [
+      'get',
+      'svc',
+      '-n',
+      'ambient-mesh-benchmark',
+      '-l',
+      'gateway.networking.k8s.io/gateway-name=ambient-benchmark',
+      '-o',
+      'jsonpath={.items[0].metadata.name}',
+    ],
+  });
+  expect(name).toBe('ambient-benchmark-istio');
+});
+
 test('waitForDeploymentReady calls kubectl rollout status with a timeout', async () => {
   let captured = null;
   mock.module('./exec.js', () => ({

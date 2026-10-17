@@ -17,6 +17,10 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
     cordonNode: async name => calls.push({ mod: 'cordon', name }),
     uncordonNode: async name => calls.push({ mod: 'uncordon', name }),
     waitForDeploymentReady: async (ns, name) => calls.push({ mod: 'wait', ns, name }),
+    resolveGatewayServiceName: async (ns, gatewayName) => {
+      calls.push({ mod: 'resolveGatewaySvc', ns, gatewayName });
+      return 'ambient-benchmark-istio';
+    },
   }));
   mock.module('./lib/meshcli.js', () => ({
     deployUsecase: async name => calls.push({ mod: 'deploy', name }),
@@ -24,8 +28,8 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => calls.push({ mod: 'ensureFortio' }),
-    runLoadTest: async ({ connections }) => {
-      calls.push({ mod: 'load', connections });
+    runLoadTest: async ({ connections, targetHost }) => {
+      calls.push({ mod: 'load', connections, targetHost });
       return { p50Ms: 100, p95Ms: 200, p99Ms: 250, throughputQps: 500, errorCount: 0 };
     },
   }));
@@ -63,6 +67,14 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
 
   const loadCalls = calls.filter(c => c.mod === 'load');
   expect(loadCalls.map(c => c.connections)).toEqual([8, 16, 8, 16]); // 2 concurrency levels x 2 node modes
+  // targetHost must come from resolveGatewayServiceName's result, not a hardcoded guess.
+  expect(loadCalls.every(c => c.targetHost === 'ambient-benchmark-istio.ambient-mesh-benchmark.svc.cluster.local')).toBe(true);
+
+  const resolveCalls = calls.filter(c => c.mod === 'resolveGatewaySvc');
+  expect(resolveCalls).toEqual([
+    { mod: 'resolveGatewaySvc', ns: 'ambient-mesh-benchmark', gatewayName: 'ambient-benchmark' },
+    { mod: 'resolveGatewaySvc', ns: 'ambient-mesh-benchmark', gatewayName: 'ambient-benchmark' },
+  ]); // once per node mode (not once per concurrency level)
 
   const recordCalls = calls.filter(c => c.mod === 'record');
   expect(recordCalls.length).toBe(4);

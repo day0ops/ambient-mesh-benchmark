@@ -21,6 +21,7 @@ mock.module('./lib/cluster.js', () => ({
   cordonNode: async () => {},
   uncordonNode: async () => {},
   waitForDeploymentReady: async () => {},
+  resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
 }));
 mock.module('./lib/meshcli.js', () => ({
   deployUsecase: async () => {},

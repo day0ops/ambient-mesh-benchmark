@@ -15,6 +15,7 @@ export const DEFAULT_TIER_CONCURRENCY = [8, 16, 32, 64, 128, 256, 512];
 export const LOAD_GEN_NODE_LABEL = { key: 'benchmark-role', value: 'loadgen' };
 
 export const NAMESPACE = 'ambient-mesh-benchmark';
+export const GATEWAY_NAME = 'ambient-benchmark';
 export const GATEWAY_HOSTNAME = 'ambient-benchmark.example.com';
 export const TRANSFER_PATH = '/api/v1/transfers';
 export const TRANSFER_PAYLOAD = JSON.stringify({

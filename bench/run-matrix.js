@@ -1,7 +1,12 @@
 // bench/run-matrix.js
 import { join } from 'path';
 import { run } from './lib/exec.js';
-import { cordonNode, uncordonNode, waitForDeploymentReady } from './lib/cluster.js';
+import {
+  cordonNode,
+  uncordonNode,
+  waitForDeploymentReady,
+  resolveGatewayServiceName,
+} from './lib/cluster.js';
 import { deployUsecase, patchDeploymentResources } from './lib/meshcli.js';
 import { ensureFortioPod, runLoadTest } from './lib/fortio.js';
 import { ensureImageRenderer, capturePanel } from './lib/grafana.js';
@@ -10,12 +15,12 @@ import {
   USECASE_BY_PATH,
   NODE_MODES_BY_PATH,
   NAMESPACE,
+  GATEWAY_NAME,
   GATEWAY_HOSTNAME,
   TRANSFER_PATH,
   TRANSFER_PAYLOAD,
 } from './config.js';
 
-const GATEWAY_SERVICE_DNS = `ambient-benchmark.${NAMESPACE}.svc.cluster.local`;
 const SCALED_RESOURCES = { cpu: '2000m', memory: '2Gi' };
 const LOAD_TEST_DURATION_SEC = 30;
 
@@ -89,6 +94,9 @@ export async function runMatrix({
         await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
         await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
 
+        const gatewayServiceName = await resolveGatewayServiceName(NAMESPACE, GATEWAY_NAME);
+        const targetHost = `${gatewayServiceName}.${NAMESPACE}.svc.cluster.local`;
+
         if (tier === 'scaled') {
           await patchDeploymentResources(NAMESPACE, 'account-service', SCALED_RESOURCES);
           await patchDeploymentResources(NAMESPACE, 'ledger-service', SCALED_RESOURCES);
@@ -101,7 +109,7 @@ export async function runMatrix({
           const fortioResult = await runLoadTest({
             connections: concurrency,
             durationSec: LOAD_TEST_DURATION_SEC,
-            targetHost: GATEWAY_SERVICE_DNS,
+            targetHost,
             hostHeader: GATEWAY_HOSTNAME,
             path: TRANSFER_PATH,
             method: 'POST',

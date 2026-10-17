@@ -19,6 +19,7 @@ test('runMatrix waits for both deployments to be ready again after scaled-tier r
     cordonNode: async () => {},
     uncordonNode: async () => {},
     waitForDeploymentReady: async (ns, name) => calls.push({ mod: 'wait', ns, name }),
+    resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
   }));
   mock.module('./lib/meshcli.js', () => ({
     deployUsecase: async name => calls.push({ mod: 'deploy', name }),

@@ -21,6 +21,7 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
     cordonNode: async name => calls.push({ mod: 'cordon', name }),
     uncordonNode: async name => calls.push({ mod: 'uncordon', name }),
     waitForDeploymentReady: async (ns, name) => calls.push({ mod: 'wait', ns, name }),
+    resolveGatewayServiceName: async () => 'ambient-benchmark-istio',
   }));
   mock.module('./lib/meshcli.js', () => ({
     deployUsecase: async name => {
