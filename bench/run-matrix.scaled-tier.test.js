@@ -36,6 +36,7 @@ test('runMatrix waits for both deployments to be ready again after scaled-tier r
   }));
   mock.module('./lib/results.js', () => ({
     recordRun: async () => '/fake/path.json',
+    resultExists: async () => false,
   }));
 
   const { runMatrix } = await import('./run-matrix.js');

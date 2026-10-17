@@ -24,3 +24,33 @@ test('recordRun writes a JSON file named after the run parameters', async () => 
   expect(content.fortioResult.throughputQps).toBe(583.61);
   expect(content.screenshotPaths).toEqual(['/tmp/panel1.png']);
 });
+
+test('resultExists returns true once a matching result file has been recorded', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bench-results-'));
+  const { recordRun, resultExists } = await import('./results.js');
+
+  expect(await resultExists(dir, 'ztunnel', 'single', 'default', 128)).toBe(false);
+
+  await recordRun(
+    {
+      path: 'ztunnel',
+      nodeMode: 'single',
+      tier: 'default',
+      concurrency: 128,
+      fortioResult: { p50Ms: 95, p95Ms: 187, p99Ms: 214, throughputQps: 583.61, errorCount: 0 },
+      screenshotPaths: [],
+      timestamp: '2026-10-17T00:00:00.000Z',
+    },
+    dir
+  );
+
+  expect(await resultExists(dir, 'ztunnel', 'single', 'default', 128)).toBe(true);
+  // A different concurrency level must not match the prefix.
+  expect(await resultExists(dir, 'ztunnel', 'single', 'default', 256)).toBe(false);
+});
+
+test('resultExists returns false (not throw) when the results directory does not exist yet', async () => {
+  const { resultExists } = await import('./results.js');
+  const missingDir = join(tmpdir(), `bench-results-missing-${Date.now()}`);
+  expect(await resultExists(missingDir, 'direct', 'none', 'default', 8)).toBe(false);
+});

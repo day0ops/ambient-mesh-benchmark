@@ -38,6 +38,7 @@ test("applyNodeMode('single') uncordons the first node before cordoning the rest
   }));
   mock.module('./lib/results.js', () => ({
     recordRun: async () => '/fake/path.json',
+    resultExists: async () => false,
   }));
 
   const { runMatrix } = await import('./run-matrix.js');

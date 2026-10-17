@@ -54,6 +54,7 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
       calls.push({ mod: 'record', path: run.path, concurrency: run.concurrency });
       return '/fake/path.json';
     },
+    resultExists: async () => false,
   }));
 
   const { runMatrix } = await import('./run-matrix.js');

@@ -11,7 +11,7 @@ import {
 import { deployUsecase, patchDeploymentResources } from './lib/meshcli.js';
 import { ensureFortioPod, runLoadTest } from './lib/fortio.js';
 import { ensureImageRenderer, capturePanel } from './lib/grafana.js';
-import { recordRun } from './lib/results.js';
+import { recordRun, resultExists } from './lib/results.js';
 import {
   USECASE_BY_PATH,
   NODE_MODES_BY_PATH,
@@ -92,6 +92,23 @@ export async function runMatrix({
       const nodeModes = NODE_MODES_BY_PATH[path];
 
       for (const nodeMode of nodeModes) {
+        const label = nodeModeLabel(nodeMode);
+
+        // Resume support: skip combinations already recorded by a prior run
+        // (e.g. before a crash) instead of re-running the whole matrix.
+        const pendingConcurrency = [];
+        for (const concurrency of concurrencyLevels) {
+          if (await resultExists(resultsDir, path, label, tier, concurrency)) {
+            console.log(`Skipping ${path}-${label}-${tier}-${concurrency}: result already exists`);
+          } else {
+            pendingConcurrency.push(concurrency);
+          }
+        }
+        if (pendingConcurrency.length === 0) {
+          console.log(`Skipping ${path}-${label}-${tier}: all concurrency levels already recorded`);
+          continue;
+        }
+
         await applyNodeMode(nodeMode === 'n/a' ? 'multi' : nodeMode);
         await deployUsecase(usecaseName, meshFieldKitDir);
         await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
@@ -107,7 +124,7 @@ export async function runMatrix({
           await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
         }
 
-        for (const concurrency of concurrencyLevels) {
+        for (const concurrency of pendingConcurrency) {
           const startedAt = Date.now();
           const fortioResult = await runLoadTest({
             connections: concurrency,
@@ -119,7 +136,7 @@ export async function runMatrix({
             payload: TRANSFER_PAYLOAD,
           });
           const endedAt = Date.now();
-          const runLabel = `${path}-${nodeModeLabel(nodeMode)}-${tier}-${concurrency}`;
+          const runLabel = `${path}-${label}-${tier}-${concurrency}`;
           const screenshotPaths = await captureDashboardPanels(
             grafanaUrl,
             grafanaAuth,
@@ -132,7 +149,7 @@ export async function runMatrix({
           await recordRun(
             {
               path,
-              nodeMode: nodeModeLabel(nodeMode),
+              nodeMode: label,
               tier,
               concurrency,
               fortioResult,

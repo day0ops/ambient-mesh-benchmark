@@ -46,6 +46,7 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
       calls.push({ mod: 'record', path: run.path, concurrency: run.concurrency });
       return '/fake/path.json';
     },
+    resultExists: async () => false,
   }));
 
   const { runMatrix } = await import('./run-matrix.js');
