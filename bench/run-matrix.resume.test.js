@@ -44,6 +44,8 @@ test('runMatrix skips a combination whose result file already exists, without ca
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async ({ connections }) => {
       loadCalls.push(connections);
       return { p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 };
@@ -96,6 +98,8 @@ test('runMatrix runs a combination normally when no prior result file exists', a
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async ({ connections }) => {
       loadCalls.push(connections);
       return { p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 };

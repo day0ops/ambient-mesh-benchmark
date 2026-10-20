@@ -9,7 +9,7 @@ import {
   resolveGatewayServiceName,
 } from './lib/cluster.js';
 import { deployUsecase, patchDeploymentResources } from './lib/meshcli.js';
-import { ensureFortioPod, runLoadTest } from './lib/fortio.js';
+import { ensureFortioPod, ensureFortioPortForward, stopFortioPortForward, runLoadTest } from './lib/fortio.js';
 import { ensureImageRenderer, capturePanel } from './lib/grafana.js';
 import { recordRun, resultExists } from './lib/results.js';
 import {
@@ -115,6 +115,7 @@ export async function runMatrix({
 
   await ensureLoadGenNode();
   await ensureFortioPod();
+  await ensureFortioPortForward();
   await ensureImageRenderer();
 
   // Alternates the transfer direction between consecutive runs so the source
@@ -206,6 +207,7 @@ export async function runMatrix({
     mainError = err;
     throw err;
   } finally {
+    stopFortioPortForward();
     try {
       const names = await nonLoadGenNodeNames();
       const results = await Promise.allSettled(names.map(name => uncordonNode(name)));

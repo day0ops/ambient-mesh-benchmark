@@ -37,6 +37,8 @@ test('runMatrix uncordons all nodes and rethrows when a step fails partway throu
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => calls.push({ mod: 'ensureFortio' }),
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async ({ connections }) => {
       calls.push({ mod: 'load', connections });
       return { p50Ms: 100, p95Ms: 200, p99Ms: 250, throughputQps: 500, errorCount: 0 };

@@ -37,6 +37,8 @@ test('runMatrix still propagates the original error when cleanup itself fails', 
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async () => ({ p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 }),
   }));
   mock.module('./lib/grafana.js', () => ({
@@ -99,6 +101,8 @@ test('runMatrix throws the cleanup error when the main path succeeds but the fin
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async () => ({ p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 }),
   }));
   mock.module('./lib/grafana.js', () => ({

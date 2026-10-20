@@ -26,6 +26,8 @@ test('runMatrix alternates transfer direction across consecutive load test runs'
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async ({ payload }) => {
       payloads.push(payload);
       return { p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 };

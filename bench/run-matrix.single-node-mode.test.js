@@ -30,6 +30,8 @@ test("applyNodeMode('single') uncordons the first node before cordoning the rest
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => {},
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async () => ({ p50Ms: 1, p95Ms: 2, p99Ms: 3, throughputQps: 100, errorCount: 0 }),
   }));
   mock.module('./lib/grafana.js', () => ({

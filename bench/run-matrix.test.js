@@ -29,6 +29,8 @@ test('runMatrix cordon/uncordons, deploys, runs fortio per concurrency level, ca
   }));
   mock.module('./lib/fortio.js', () => ({
     ensureFortioPod: async () => calls.push({ mod: 'ensureFortio' }),
+    ensureFortioPortForward: async () => {},
+    stopFortioPortForward: () => {},
     runLoadTest: async ({ connections, targetHost }) => {
       calls.push({ mod: 'load', connections, targetHost });
       return { p50Ms: 100, p95Ms: 200, p99Ms: 250, throughputQps: 500, errorCount: 0 };
