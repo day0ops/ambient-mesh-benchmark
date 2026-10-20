@@ -12,6 +12,15 @@ export const NODE_MODES_BY_PATH = {
 
 export const DEFAULT_TIER_CONCURRENCY = [8, 16, 32, 64, 128, 256, 512];
 
+// The benchmark measures Istio's own overhead (ztunnel/waypoint proxy cost),
+// not how the test apps scale - both tiers are sized generously enough that
+// account-service/ledger-service are never the bottleneck, so throughput and
+// latency differences are attributable to the mesh path, not app throttling.
+export const TIER_RESOURCES = {
+  default: { cpu: '1000m', memory: '1Gi' },
+  scaled: { cpu: '2000m', memory: '2Gi' },
+};
+
 export const LOAD_GEN_NODE_LABEL = { key: 'benchmark-role', value: 'loadgen' };
 
 export const NAMESPACE = 'ambient-mesh-benchmark';

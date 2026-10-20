@@ -22,9 +22,9 @@ import {
   TRANSFER_PATH,
   TRANSFER_PAYLOADS,
   LOAD_GEN_NODE_LABEL,
+  TIER_RESOURCES,
 } from './config.js';
 
-const SCALED_RESOURCES = { cpu: '2000m', memory: '2Gi' };
 const LOAD_TEST_DURATION_SEC = 30;
 // Gives Prometheus a chance to scrape the final data points before the
 // Grafana panel capture window closes - scrape intervals of 15-30s can
@@ -154,12 +154,14 @@ export async function runMatrix({
         const gatewayServiceName = await resolveGatewayServiceName(NAMESPACE, GATEWAY_NAME);
         const targetHost = `${gatewayServiceName}.${NAMESPACE}.svc.cluster.local`;
 
-        if (tier === 'scaled') {
-          await patchDeploymentResources(NAMESPACE, 'account-service', SCALED_RESOURCES);
-          await patchDeploymentResources(NAMESPACE, 'ledger-service', SCALED_RESOURCES);
-          await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
-          await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
+        const tierResources = TIER_RESOURCES[tier];
+        if (!tierResources) {
+          throw new Error(`runMatrix: unknown tier '${tier}' (expected one of ${Object.keys(TIER_RESOURCES).join(', ')})`);
         }
+        await patchDeploymentResources(NAMESPACE, 'account-service', tierResources);
+        await patchDeploymentResources(NAMESPACE, 'ledger-service', tierResources);
+        await waitForDeploymentReady(NAMESPACE, 'account-service', 180);
+        await waitForDeploymentReady(NAMESPACE, 'ledger-service', 180);
 
         for (const concurrency of pendingConcurrency) {
           const startedAt = Date.now();
