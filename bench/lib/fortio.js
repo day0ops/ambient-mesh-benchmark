@@ -6,7 +6,11 @@ import { run } from './exec.js';
 // and unmeshed across all test paths, and survives usecase namespace churn.
 const NAMESPACE = 'benchmark-loadgen';
 const POD_NAME = 'fortio-loadgen';
-const CONTROL_PORT = 8080;
+// Fortio's own control/REST port inside the pod - fixed by Fortio itself.
+const POD_CONTROL_PORT = 8080;
+// Local side of the port-forward - deliberately not 8080, which commonly
+// collides with other local dev tooling on an operator's machine.
+const DEFAULT_LOCAL_PORT = 18080;
 const MANIFEST_PATH = new URL('../manifests/fortio-pod.yaml', import.meta.url).pathname;
 
 export async function ensureFortioPod() {
@@ -39,7 +43,7 @@ export function stopFortioPortForward() {
 // while still running the actual load generation in-cluster - no external
 // network noise, no dependency on the VPN-gated public NLB.
 export async function ensureFortioPortForward({
-  localPort = CONTROL_PORT,
+  localPort = DEFAULT_LOCAL_PORT,
   timeoutMs = 15000,
   pollIntervalMs = 300,
   checkReady = port => isPortForwardHealthy(port),
@@ -54,7 +58,7 @@ export async function ensureFortioPortForward({
     `pod/${POD_NAME}`,
     '-n',
     NAMESPACE,
-    `${localPort}:${CONTROL_PORT}`,
+    `${localPort}:${POD_CONTROL_PORT}`,
   ]);
 
   const deadline = Date.now() + timeoutMs;
@@ -123,7 +127,7 @@ export async function runLoadTest({
   path,
   method,
   payload,
-  localPort = CONTROL_PORT,
+  localPort = DEFAULT_LOCAL_PORT,
   maxRetries = DEFAULT_LOAD_TEST_RETRIES,
 }) {
   const params = new URLSearchParams();
