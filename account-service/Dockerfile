@@ -16,7 +16,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /build/account-service/target/account-service.jar app.jar
 COPY --from=otel /otel/opentelemetry-javaagent.jar otel-javaagent.jar
-ENV JAVA_TOOL_OPTIONS="-javaagent:/app/otel-javaagent.jar" \
+ENV JAVA_TOOL_OPTIONS="-javaagent:/app/otel-javaagent.jar -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -Xss512k" \
     OTEL_SERVICE_NAME="account-service" \
     OTEL_TRACES_EXPORTER="otlp" \
     OTEL_METRICS_EXPORTER="none" \

@@ -15,7 +15,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /build/ledger-service/target/ledger-service-exec.jar app.jar
 COPY --from=otel /otel/opentelemetry-javaagent.jar otel-javaagent.jar
-ENV JAVA_TOOL_OPTIONS="-javaagent:/app/otel-javaagent.jar" \
+ENV JAVA_TOOL_OPTIONS="-javaagent:/app/otel-javaagent.jar -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -Xss512k" \
     OTEL_SERVICE_NAME="ledger-service" \
     OTEL_TRACES_EXPORTER="otlp" \
     OTEL_METRICS_EXPORTER="none" \
