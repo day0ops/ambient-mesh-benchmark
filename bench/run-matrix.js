@@ -20,7 +20,7 @@ import {
   GATEWAY_NAME,
   GATEWAY_HOSTNAME,
   TRANSFER_PATH,
-  TRANSFER_PAYLOAD,
+  TRANSFER_PAYLOADS,
   LOAD_GEN_NODE_LABEL,
 } from './config.js';
 
@@ -117,6 +117,11 @@ export async function runMatrix({
   await ensureFortioPod();
   await ensureImageRenderer();
 
+  // Alternates the transfer direction between consecutive runs so the source
+  // account doesn't monotonically deplete over a long matrix or repeated
+  // re-runs - see TRANSFER_PAYLOADS in config.js.
+  let runCount = 0;
+
   let mainError;
   try {
     for (const path of paths) {
@@ -165,8 +170,9 @@ export async function runMatrix({
             hostHeader: GATEWAY_HOSTNAME,
             path: TRANSFER_PATH,
             method: 'POST',
-            payload: TRANSFER_PAYLOAD,
+            payload: TRANSFER_PAYLOADS[runCount % TRANSFER_PAYLOADS.length],
           });
+          runCount += 1;
           const endedAt = Date.now();
           if (grafanaSettleMs > 0) await Bun.sleep(grafanaSettleMs);
           const runLabel = `${path}-${label}-${tier}-${concurrency}`;

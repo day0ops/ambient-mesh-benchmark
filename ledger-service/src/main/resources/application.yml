@@ -17,4 +17,7 @@ management:
 ledger:
   seed:
     count: 10
-    starting-balance: 10000.00
+    # Large enough to absorb a full benchmark matrix run without an account
+    # depleting mid-run (combined with the harness alternating transfer
+    # direction between runs for long-term stability across repeated runs).
+    starting-balance: 100000000.00

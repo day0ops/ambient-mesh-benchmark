@@ -18,9 +18,10 @@ export const NAMESPACE = 'ambient-mesh-benchmark';
 export const GATEWAY_NAME = 'ambient-benchmark';
 export const GATEWAY_HOSTNAME = 'ambient-benchmark.example.com';
 export const TRANSFER_PATH = '/api/v1/transfers';
-export const TRANSFER_PAYLOAD = JSON.stringify({
-  fromAccount: 'acc-001',
-  toAccount: 'acc-002',
-  amount: 1.0,
-  currency: 'USD',
-});
+// Alternated across runs (see run-matrix.js) so the source account doesn't
+// monotonically deplete over a long matrix or repeated re-runs - each pair
+// of consecutive runs nets to roughly zero balance change.
+export const TRANSFER_PAYLOADS = [
+  JSON.stringify({ fromAccount: 'acc-001', toAccount: 'acc-002', amount: 1.0, currency: 'USD' }),
+  JSON.stringify({ fromAccount: 'acc-002', toAccount: 'acc-001', amount: 1.0, currency: 'USD' }),
+];
