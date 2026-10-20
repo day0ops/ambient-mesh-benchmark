@@ -21,7 +21,9 @@ spec:
   containers:
     - name: fortio
       image: fortio/fortio:1.63.0
-      command: ["sleep", "infinity"]
+      # The fortio image has no sleep/shell binary to idle on - run its own
+      # server mode to keep the container alive for `kubectl exec ... fortio load`.
+      command: ["fortio", "server"]
       resources:
         requests:
           cpu: "2"
