@@ -66,6 +66,8 @@ export async function runLoadTest({
     '0',
     '-t',
     `${durationSec}s`,
+    '-p',
+    '50,95,99',
     '-json',
     '-',
     '-X',

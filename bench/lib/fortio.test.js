@@ -74,6 +74,8 @@ test('runLoadTest execs fortio load with the right flags and parses the JSON res
     '0',
     '-t',
     '30s',
+    '-p',
+    '50,95,99',
     '-json',
     '-',
     '-X',
