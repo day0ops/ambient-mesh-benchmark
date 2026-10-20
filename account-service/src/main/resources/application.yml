@@ -1,5 +1,10 @@
 server:
   port: 8080
+  tomcat:
+    threads:
+      max: 1000
+      min-spare: 50
+    accept-count: 1000
 
 spring:
   application:
