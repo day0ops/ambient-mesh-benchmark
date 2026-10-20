@@ -25,6 +25,7 @@ test('ensureImageRenderer applies the manifest and patches Grafana env vars', as
       'telemetry',
       'GF_RENDERING_SERVER_URL=http://grafana-image-renderer.telemetry.svc.cluster.local:8081/render',
       'GF_RENDERING_CALLBACK_URL=http://kube-prometheus-stack-grafana.telemetry.svc.cluster.local/',
+      'GF_RENDERING_RENDERER_TOKEN=bench-internal-render-token',
     ],
   });
   expect(calls[2]).toEqual({

@@ -18,6 +18,9 @@ export async function ensureImageRenderer() {
     NAMESPACE,
     'GF_RENDERING_SERVER_URL=http://grafana-image-renderer.telemetry.svc.cluster.local:8081/render',
     `GF_RENDERING_CALLBACK_URL=http://${GRAFANA_DEPLOYMENT}.telemetry.svc.cluster.local/`,
+    // Must match the renderer's AUTH_TOKEN (grafana-image-renderer.yaml) - Grafana
+    // refuses to start remote rendering with the default token.
+    'GF_RENDERING_RENDERER_TOKEN=bench-internal-render-token',
   ]);
   await run('kubectl', [
     'rollout',

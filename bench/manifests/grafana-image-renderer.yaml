@@ -18,6 +18,11 @@ spec:
           image: grafana/grafana-image-renderer:3.12.3
           ports:
             - containerPort: 8081
+          env:
+            # Shared secret with GF_RENDERING_RENDERER_TOKEN below - newer Grafana
+            # versions refuse to start remote rendering with the default token.
+            - name: AUTH_TOKEN
+              value: bench-internal-render-token
           resources:
             requests:
               cpu: "500m"
