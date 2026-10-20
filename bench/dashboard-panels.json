@@ -1,1 +1,7 @@
-[]
+[
+  { "dashboardUid": "OBBOwpsnz", "panelId": 4, "label": "global-request-volume" },
+  { "dashboardUid": "istio-ztunnel", "panelId": 3, "label": "ztunnel-memory-usage" },
+  { "dashboardUid": "istio-ztunnel", "panelId": 4, "label": "ztunnel-cpu-usage" },
+  { "dashboardUid": "istio-proxy-performance", "panelId": 72, "label": "proxy-memory-usage" },
+  { "dashboardUid": "istio-proxy-performance", "panelId": 145, "label": "proxy-cpu-usage" }
+]
