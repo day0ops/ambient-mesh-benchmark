@@ -8,21 +8,21 @@ export async function deployUsecase(usecaseName, meshFieldKitDir) {
   );
 }
 
-// cpuLimit is deliberately omitted by default (undefined/null) - a hard CPU
-// limit causes Kubernetes CFS quota throttling in short bursts even when
-// average usage looks low, which showed up directly as benchmark tail
-// latency. Memory keeps requests==limits since uncapped memory risks the
-// node, not just the pod, and heap sizing already addresses GC pressure.
-export async function patchDeploymentResources(namespace, deploymentName, { cpuRequest, cpuLimit, memory }) {
-  const limitsParts = [`memory=${memory}`];
+// cpuLimit/memoryLimit are deliberately omitted by default (undefined/null) -
+// the apps are meant to scale unbounded so they're never the bottleneck;
+// only Istio's own overhead is under test.
+export async function patchDeploymentResources(namespace, deploymentName, { cpuRequest, cpuLimit, memoryRequest, memoryLimit }) {
+  const limitsParts = [];
   if (cpuLimit) limitsParts.push(`cpu=${cpuLimit}`);
-  return run('kubectl', [
+  if (memoryLimit) limitsParts.push(`memory=${memoryLimit}`);
+  const args = [
     'set',
     'resources',
     `deployment/${deploymentName}`,
     '-n',
     namespace,
-    `--requests=cpu=${cpuRequest},memory=${memory}`,
-    `--limits=${limitsParts.join(',')}`,
-  ]);
+    `--requests=cpu=${cpuRequest},memory=${memoryRequest}`,
+  ];
+  if (limitsParts.length > 0) args.push(`--limits=${limitsParts.join(',')}`);
+  return run('kubectl', args);
 }

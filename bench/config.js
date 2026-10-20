@@ -13,16 +13,13 @@ export const NODE_MODES_BY_PATH = {
 export const DEFAULT_TIER_CONCURRENCY = [8, 16, 32, 64, 128, 256, 512];
 
 // The benchmark measures Istio's own overhead (ztunnel/waypoint proxy cost),
-// not how the test apps scale - both tiers are sized generously enough that
-// account-service/ledger-service are never the bottleneck, so throughput and
-// latency differences are attributable to the mesh path, not app throttling.
-// cpuLimit is intentionally unset: a hard CPU limit causes Kubernetes CFS
-// quota throttling in short bursts (measured 57% of scheduling periods
-// throttled at c=512 despite ~20% average usage), which showed up directly
-// as tail latency. cpuRequest still sets scheduling priority/QoS.
+// not how the test apps scale - cpuLimit/memoryLimit are left unset on both
+// tiers so account-service/ledger-service are never the bottleneck, and
+// throughput/latency differences are attributable to the mesh path, not app
+// throttling. cpuRequest/memoryRequest still set scheduling priority/QoS.
 export const TIER_RESOURCES = {
-  default: { cpuRequest: '1000m', cpuLimit: null, memory: '1Gi' },
-  scaled: { cpuRequest: '2000m', cpuLimit: null, memory: '2Gi' },
+  default: { cpuRequest: '1000m', cpuLimit: null, memoryRequest: '1Gi', memoryLimit: null },
+  scaled: { cpuRequest: '2000m', cpuLimit: null, memoryRequest: '2Gi', memoryLimit: null },
 };
 
 export const LOAD_GEN_NODE_LABEL = { key: 'benchmark-role', value: 'loadgen' };

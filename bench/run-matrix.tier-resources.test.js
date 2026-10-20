@@ -62,7 +62,12 @@ test('runMatrix patches the default tier to 1 CPU/1Gi (not left unpatched)', asy
     { ns: 'ambient-mesh-benchmark', name: 'account-service', resources: TIER_RESOURCES.default },
     { ns: 'ambient-mesh-benchmark', name: 'ledger-service', resources: TIER_RESOURCES.default },
   ]);
-  expect(TIER_RESOURCES.default).toEqual({ cpuRequest: '1000m', cpuLimit: null, memory: '1Gi' });
+  expect(TIER_RESOURCES.default).toEqual({
+    cpuRequest: '1000m',
+    cpuLimit: null,
+    memoryRequest: '1Gi',
+    memoryLimit: null,
+  });
 });
 
 test('runMatrix patches the scaled tier to 2 CPU/2Gi', async () => {
@@ -86,7 +91,12 @@ test('runMatrix patches the scaled tier to 2 CPU/2Gi', async () => {
     { ns: 'ambient-mesh-benchmark', name: 'account-service', resources: TIER_RESOURCES.scaled },
     { ns: 'ambient-mesh-benchmark', name: 'ledger-service', resources: TIER_RESOURCES.scaled },
   ]);
-  expect(TIER_RESOURCES.scaled).toEqual({ cpuRequest: '2000m', cpuLimit: null, memory: '2Gi' });
+  expect(TIER_RESOURCES.scaled).toEqual({
+    cpuRequest: '2000m',
+    cpuLimit: null,
+    memoryRequest: '2Gi',
+    memoryLimit: null,
+  });
 });
 
 test('runMatrix throws a clear error for an unknown tier instead of silently skipping the patch', async () => {

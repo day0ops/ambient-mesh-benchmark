@@ -24,7 +24,7 @@ test('deployUsecase runs the mesh CLI with --skip-tests from the given directory
   expect(captured.opts.cwd).toBe('/path/to/mesh-field-kit');
 });
 
-test('patchDeploymentResources sets the cpu request but omits the cpu limit by default', async () => {
+test('patchDeploymentResources omits --limits entirely when cpu and memory limits are both unset', async () => {
   let captured = null;
   mock.module('./exec.js', () => ({
     run: async (cmd, args) => {
@@ -36,7 +36,8 @@ test('patchDeploymentResources sets the cpu request but omits the cpu limit by d
   await patchDeploymentResources('ambient-mesh-benchmark', 'account-service', {
     cpuRequest: '2000m',
     cpuLimit: null,
-    memory: '2Gi',
+    memoryRequest: '2Gi',
+    memoryLimit: null,
   });
   expect(captured).toEqual({
     cmd: 'kubectl',
@@ -47,12 +48,11 @@ test('patchDeploymentResources sets the cpu request but omits the cpu limit by d
       '-n',
       'ambient-mesh-benchmark',
       '--requests=cpu=2000m,memory=2Gi',
-      '--limits=memory=2Gi',
     ],
   });
 });
 
-test('patchDeploymentResources includes an explicit cpu limit when one is given', async () => {
+test('patchDeploymentResources includes explicit cpu and memory limits when given', async () => {
   let captured = null;
   mock.module('./exec.js', () => ({
     run: async (cmd, args) => {
@@ -64,7 +64,8 @@ test('patchDeploymentResources includes an explicit cpu limit when one is given'
   await patchDeploymentResources('ambient-mesh-benchmark', 'account-service', {
     cpuRequest: '1000m',
     cpuLimit: '4000m',
-    memory: '1Gi',
+    memoryRequest: '1Gi',
+    memoryLimit: '2Gi',
   });
   expect(captured).toEqual({
     cmd: 'kubectl',
@@ -75,7 +76,7 @@ test('patchDeploymentResources includes an explicit cpu limit when one is given'
       '-n',
       'ambient-mesh-benchmark',
       '--requests=cpu=1000m,memory=1Gi',
-      '--limits=memory=1Gi,cpu=4000m',
+      '--limits=cpu=4000m,memory=2Gi',
     ],
   });
 });
