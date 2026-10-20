@@ -16,9 +16,13 @@ export const DEFAULT_TIER_CONCURRENCY = [8, 16, 32, 64, 128, 256, 512];
 // not how the test apps scale - both tiers are sized generously enough that
 // account-service/ledger-service are never the bottleneck, so throughput and
 // latency differences are attributable to the mesh path, not app throttling.
+// cpuLimit is intentionally unset: a hard CPU limit causes Kubernetes CFS
+// quota throttling in short bursts (measured 57% of scheduling periods
+// throttled at c=512 despite ~20% average usage), which showed up directly
+// as tail latency. cpuRequest still sets scheduling priority/QoS.
 export const TIER_RESOURCES = {
-  default: { cpu: '1000m', memory: '1Gi' },
-  scaled: { cpu: '2000m', memory: '2Gi' },
+  default: { cpuRequest: '1000m', cpuLimit: null, memory: '1Gi' },
+  scaled: { cpuRequest: '2000m', cpuLimit: null, memory: '2Gi' },
 };
 
 export const LOAD_GEN_NODE_LABEL = { key: 'benchmark-role', value: 'loadgen' };
